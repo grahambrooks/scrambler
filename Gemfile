@@ -1,4 +1,6 @@
 source "http://rubygems.org"
 
-# Specify your gem's dependencies in scrambler.gemspec
+# Rake is a build dependency and not a dependency for the gem so defined here.
+gem 'rake'
+
 gemspec
