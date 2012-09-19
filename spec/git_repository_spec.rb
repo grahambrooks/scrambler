@@ -20,5 +20,24 @@ EOD
       entries[0][:date].should == Date.parse('2012-05-04 20:49:08 -0400')
       entries[0][:comment].should == 'better vector iterators'
     end
+
+    it "retrieves log entries from repo" do
+      repo = GitRepo.new(".")
+
+      entries = repo.log_entries
+
+      entries.size.should > 0
+    end
+
+    it "iterates commit entries" do
+      repo = GitRepo.new(".")
+
+      entries = repo.each_commit do |commit|
+        commit[:sha].should_not == nil
+        commit[:author].should_not == nil
+        commit[:date].should_not == nil
+        commit[:comment].should_not == nil
+      end
+    end
   end
 end

@@ -17,5 +17,16 @@ module Scrambler
       end
       entries
     end
+
+    def log_entries
+      log_text = `git log --pretty=format:"%H|%an|%ci|%s"`
+      parse_log(log_text)
+    end
+
+    def each_commit(&block)
+      log_entries.each do |commit|
+        yield commit if block_given?
+      end
+    end
   end
 end

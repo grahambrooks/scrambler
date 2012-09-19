@@ -1,6 +1,7 @@
 require "scrambler/version"
 require "scrambler/code_scramble"
 require "scrambler/site_metrics"
+require "scrambler/git_repository"
 require "paths"
 require 'fileutils'
 require 'yaml'
