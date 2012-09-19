@@ -1,7 +1,9 @@
 require 'csv'
+require 'paths'
 
 module Scrambler
   class SiteMetrics
+    include Paths
     def initialize(config)
       @workspace = config["workspace"] || fail("Workspace folder required")
     end
@@ -26,12 +28,12 @@ module Scrambler
 
     def compile
       metrics = {}
-      Dir.glob File.join(@workspace, "*.audit.csv") do |audit_file|
+      Dir.glob audit_file_pattern do |audit_file|
         parse_csv(CSV.open(audit_file), metrics)
       end
 
 
-      File.open(File.join(@workspace, "site-metrics.yml"), "w") do |f|
+      File.open(site_metrics_path, "w") do |f|
         f.print metrics.to_yaml
       end
     end
