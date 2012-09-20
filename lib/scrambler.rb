@@ -49,7 +49,7 @@ module Scrambler
     puts "Updating repository #{path}"
     update_repo(path, project_name, repository)
 
-    repo = new GitRepo(path)
+    repo = GitRepo.new(path)
 
     repo.each_commit do |commit|
 
