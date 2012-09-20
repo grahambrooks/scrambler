@@ -22,12 +22,12 @@ module Scrambler
       repositories = cs.repositories
 
       repositories.each do |repository|
-        fork {
+#        fork {
           generate_repository_metrics(config, repository)
-        }
+#        }
       end
 
-      Process.waitall
+#      Process.waitall
 
       compile_metrics(config)
 
