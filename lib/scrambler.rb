@@ -63,7 +63,7 @@ module Scrambler
 
       if doc.nil?
         puts "Analysing #{project_name} commit: #{commit[:sha]}"
-        `cd #{path};git checkout #{commit[:sha]}`
+        shell "cd #{path};git checkout #{commit[:sha]}"
         shell "cloc.pl --csv --report-file=#{commit_audit_file_path(project_name, commit[:sha])} #{path} > #{commit_audit_file_path(project_name, commit[:sha])}"
 
         site_metrics = SiteMetrics.new(config)
@@ -85,14 +85,14 @@ module Scrambler
   end
 
   def self.clone_repo(path, repository)
-    puts "Cloneing #{repository["uri"]}"
+    puts "Cloning #{repository["uri"]}"
     FileUtils.mkdir(path)
 
     case repository["uri_type"]
       when "subversion"
-        print `cd #{path};svn2git #{repository["uri"]}`
+        shell "cd #{path};svn2git #{repository["uri"]}"
       when "git"
-        print `cd #{path};git clone #{repository["uri"]} .`
+        shell "cd #{path};git clone #{repository["uri"]} ."
     end
   end
 
@@ -120,5 +120,3 @@ module Scrambler
     config
   end
 end
-
-Scrambler.exec! []
