@@ -104,5 +104,3 @@ module Scrambler
     config
   end
 end
-
-Scrambler.exec! []
