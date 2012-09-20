@@ -1,8 +1,10 @@
 require "scrambler/version"
 require "scrambler/code_scramble"
 require "scrambler/site_metrics"
-require "scrambler/git_repo"
+require "scrambler/git_repository"
+require "scrambler/document_cache"
 require "paths"
+require "csv"
 require 'fileutils'
 require 'yaml'
 
@@ -14,14 +16,14 @@ module Scrambler
     puts "Scrambler #{VERSION}"
 
     if File.exists? SCRAMBLER_FILE
-      config       = load_config()
-      @workspace   = config["workspace"]
-      cs           = CodeScramble.new(config)
+      config = load_config()
+      @workspace = config["workspace"]
+      cs = CodeScramble.new(config)
       repositories = cs.repositories
 
       repositories.each do |repository|
         fork {
-          generate_repository_metrics(repository)
+          generate_repository_metrics(config, repository)
         }
       end
 
@@ -35,7 +37,7 @@ module Scrambler
     end
   end
 
-  def self.generate_repository_metrics(repository)
+  def self.generate_repository_metrics(config, repository)
     p repository
     project_name = project_name(repository)
     path = project_path(project_name)
@@ -49,14 +51,28 @@ module Scrambler
     puts "Updating repository #{path}"
     update_repo(path, project_name, repository)
 
-    repo = GitRepo.new(path)
-
-    repo.each_commit do |commit|
-
-    end
-
     puts "Running CLOC"
     shell "cloc.pl --csv --report-file=#{audit_file_path(project_name)} #{path} > #{audit_file_log_path(project_name)}"
+
+    repo = GitRepo.new(path)
+
+    cache = DocumentCache.new('prod')
+
+    repo.each_commit do |commit|
+      doc = cache.find(:sha => commit[:sha])
+
+      if doc.nil?
+        puts "Analysing #{project_name} commit: #{commit[:sha]}"
+        `cd #{path};git checkout #{commit[:sha]}`
+        shell "cloc.pl --csv --report-file=#{commit_audit_file_path(project_name, commit[:sha])} #{path} > #{commit_audit_file_path(project_name, commit[:sha])}"
+
+        site_metrics = SiteMetrics.new(config)
+
+        metrics = {:sha => commit[:sha], :cloc => site_metrics.parse_commit_csv(CSV.open(commit_audit_file_path(project_name, commit[:sha])))}
+        cache.save(metrics)
+        File.delete(commit_audit_file_path(project_name, commit[:sha]))
+      end
+    end
   end
 
   def self.update_repo(path, project_name, repository)
@@ -104,3 +120,5 @@ module Scrambler
     config
   end
 end
+
+Scrambler.exec! []
