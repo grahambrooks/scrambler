@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'scrambler/git_repository'
+require 'scrambler/git_repo'
 
 module Scrambler
   describe GitRepo do
