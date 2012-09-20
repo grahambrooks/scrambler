@@ -108,7 +108,7 @@ module Scrambler
 
   def self.shell(cmd)
     puts cmd
-    `#{cmd}`
+    print `#{cmd}`
   end
 
   def self.load_config
