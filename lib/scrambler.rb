@@ -1,7 +1,7 @@
 require "scrambler/version"
 require "scrambler/code_scramble"
 require "scrambler/site_metrics"
-require "scrambler/git_repository"
+require "scrambler/git_repo"
 require "scrambler/document_cache"
 require "paths"
 require "csv"
