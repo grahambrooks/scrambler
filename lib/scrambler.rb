@@ -42,7 +42,7 @@ module Scrambler
     project_name = project_name(repository)
     path = project_path(project_name)
 
-    puts "Processing project workspace #{path} of type #{repository["type"]}"
+    puts "Processing project workspace #{path} of type #{repository["uri_type"]}"
 
     unless File.exist? path
       clone_repo(path, repository)
