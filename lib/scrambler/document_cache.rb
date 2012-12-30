@@ -15,5 +15,13 @@ module Scrambler
     def find(keys)
       @collection.find_one(keys)
     end
+
+    def clear
+      @collection.remove
+    end
+
+    def contains_sha?(sha)
+      !find(:sha => sha).nil?
+    end
   end
 end

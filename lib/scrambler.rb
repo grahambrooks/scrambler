@@ -3,6 +3,10 @@ require "scrambler/code_scramble"
 require "scrambler/site_metrics"
 require "scrambler/git_repo"
 require "scrambler/document_cache"
+require "scrambler/workspace"
+require "scrambler/shell"
+require "scrambler/repository"
+require "scrambler/metrics_generator"
 require "paths"
 require "csv"
 require 'fileutils'
@@ -21,9 +25,12 @@ module Scrambler
       cs = CodeScramble.new(config)
       repositories = cs.repositories
 
+      generator = MetricsGenerator.new(config)
+
       repositories.each do |repository|
 #        fork {
-          generate_repository_metrics(config, repository)
+        generator.generate_metrics(repository)
+        generate_repository_metrics(config, repository)
 #        }
       end
 
@@ -48,7 +55,6 @@ module Scrambler
       clone_repo(path, repository)
     end
 
-    puts "Updating repository #{path}"
     update_repo(path, project_name, repository)
 
     puts "Running CLOC"
@@ -59,23 +65,33 @@ module Scrambler
     cache = DocumentCache.new('prod')
 
     repo.each_commit do |commit|
-      doc = cache.find(:sha => commit[:sha])
-
-      if doc.nil?
-        puts "Analysing #{project_name} commit: #{commit[:sha]}"
-        shell "cd #{path};git checkout #{commit[:sha]}"
-        shell "cloc.pl --csv --report-file=#{commit_audit_file_path(project_name, commit[:sha])} #{path} > #{commit_audit_file_path(project_name, commit[:sha])}"
-
-        site_metrics = SiteMetrics.new(config)
-
-        metrics = {:sha => commit[:sha], :cloc => site_metrics.parse_commit_csv(CSV.open(commit_audit_file_path(project_name, commit[:sha])))}
-        cache.save(metrics)
-        File.delete(commit_audit_file_path(project_name, commit[:sha]))
+      if !cache.contains_sha? commit[:sha]
+        analyse_commit(commit[:sha], config, path, project_name) do |metrics|
+          cache.save(metrics)
+        end
       end
     end
   end
 
+  def self.analyse_commit(sha, config, path, project_name)
+    begin
+      puts "Analysing #{project_name} commit: '#{sha}'"
+      shell "cd #{path};git checkout #{sha}"
+      shell "cloc.pl --csv --report-file=#{commit_audit_file_path(project_name, sha)} #{path} > #{commit_audit_file_path(project_name, sha)}"
+
+      site_metrics = SiteMetrics.new(config)
+
+      metrics = {:sha => sha, :cloc => site_metrics.parse_commit_csv(CSV.open(commit_audit_file_path(project_name, sha)))}
+      yield metrics
+      File.delete(commit_audit_file_path(project_name, sha))
+    rescue Exception => e
+      puts "Error processing commit #{sha}"
+    end
+  end
+
   def self.update_repo(path, project_name, repository)
+    puts "Updating repository #{path}"
+
     case repository["uri_type"]
       when "subversion"
         shell "cd #{path};git svn fetch > #{project_fetch_log_path(project_name)}"
@@ -101,9 +117,13 @@ module Scrambler
   end
 
   def self.compile_metrics(config)
+    begin
     site_metrics = SiteMetrics.new(config)
 
     site_metrics.compile
+    rescue Exception => e
+      puts "Error processing site metrics #{e.message}"
+      end
   end
 
   def self.shell(cmd)

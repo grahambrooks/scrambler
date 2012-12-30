@@ -20,6 +20,7 @@ module Scrambler
 
     def log_entries
       log_text = `git log --pretty=format:"%H|%an|%ci|%s"`
+      puts log_text
       parse_log(log_text)
     end
 
